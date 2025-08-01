@@ -147,3 +147,28 @@ function generateQRCode($cubicleId, $cubicleNumber, $wingName) {
     
     return $filename;
 }
+
+// In includes/functions.php
+function sendBookingConfirmation($studentEmail, $cubicleDetails, $endTime) {
+    $subject = "Library Cubicle Booking Confirmation";
+    $message = "
+        <h2>Your Cubicle Booking is Confirmed</h2>
+        <p><strong>Cubicle:</strong> {$cubicleDetails['cubicle_number']} ({$cubicleDetails['wing_name']} Wing)</p>
+        <p><strong>Booking End Time:</strong> " . date('F j, Y g:i A', strtotime($endTime)) . "</p>
+        <p>Please remember to check in by scanning the cubicle QR code again when you arrive.</p>
+    ";
+    
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: library@university.edu\r\n";
+    
+    mail($studentEmail, $subject, $message, $headers);
+}
+
+// Then modify createBooking() to call this after successful booking
+if ($result['success']) {
+    $student = $db->fetchOne("SELECT email FROM students WHERE student_id = ?", [$studentId]);
+    $cubicle = $db->fetchOne("SELECT c.cubicle_number, w.wing_name FROM cubicles c JOIN wings w ON c.wing_id = w.wing_id WHERE c.cubicle_id = ?", [$cubicleId]);
+    
+    sendBookingConfirmation($student['email'], $cubicle, $endTime);
+}
